@@ -21,9 +21,8 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epoch, i
 
             output = model(spectrograms, labels)  # OUT (batch, time, n_class)
             output = nn.functional.log_softmax(output, dim=2)
-            output = output.transpose(0, 1) # (time, batch, n_class)
 
-            loss = criterion(output, labels, label_lengths, label_lengths)
+            loss = criterion(output.view(-1, 28), labels.view(-1).to(torch.long))
             loss.backward()
 
             experiment.log_metric('loss', loss.item(), step=iter_meter.get())

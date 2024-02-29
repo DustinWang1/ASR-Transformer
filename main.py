@@ -22,7 +22,7 @@ def main(learning_rate=5e-4,
          ):
 
     hparams = {
-        "n_class": 29,
+        "n_class": 28,
         "n_feats": 128,
         "d_model": 512,
         "stride": 1,
@@ -68,9 +68,9 @@ def main(learning_rate=5e-4,
     #     output = model(specs, labels)
     #     print(output)
 
-    model = Model.build_transformer()
+    model = Model.build_transformer().to(device)
     optimizer = torch.optim.AdamW(model.parameters(), hparams['learning_rate'])
-    criterion = nn.CTCLoss(blank=28).to(device)
+    criterion = nn.CrossEntropyLoss()
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=hparams['learning_rate'],
                                                     steps_per_epoch=int(len(train_loader)),
                                                     epochs=hparams['epochs'],
