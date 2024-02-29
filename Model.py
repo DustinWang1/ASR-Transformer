@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 import math
 
 class InputEmbeddings(nn.Module):
@@ -68,6 +69,7 @@ class SpeechRecognitionModel(nn.Module):
         self.projection = nn.Linear(d_model, vocab_size)
 
     def forward(self, spec, label):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         x = self.cnn(spec)
         x = self.resCNNLayers(x)  # (batch, channel, n_feats, seq_len)
 
@@ -80,8 +82,8 @@ class SpeechRecognitionModel(nn.Module):
         # Input Embedding for label
         label = self.label_embedding(label)
 
-        causal_mask = nn.Transformer.generate_square_subsequent_mask(label.size(1))
-        x = self.transformer(src=x, tgt=label, tgt_mask=causal_mask, tgt_is_causal=True)
+        causal_mask = nn.Transformer.generate_square_subsequent_mask(label.size(1)).to(device)
+        x = self.transformer(src=x, tgt=label, tgt_mask=causal_mask)
 
         # Output of transformer is (batch, seq, embedding)
         return self.projection(x)  # (batch, seq, vocab_size)

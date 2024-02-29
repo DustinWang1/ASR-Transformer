@@ -23,10 +23,11 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epoch, i
             output = nn.functional.log_softmax(output, dim=2)
 
             loss = criterion(output.view(-1, 28), labels.view(-1).to(torch.long))
+            batch_iterator.set_postfix({"loss": f"{loss.item():6.3f}"})
             loss.backward()
 
             experiment.log_metric('loss', loss.item(), step=iter_meter.get())
-            experiment.log_metric('learning_rate', scheduler.get_lr(), step=iter_meter.get())
+            experiment.log_metric('learning_rate', scheduler.get_last_lr(), step=iter_meter.get())
 
             optimizer.step()
             scheduler.step()
