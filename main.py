@@ -70,7 +70,7 @@ def main(learning_rate=5e-4,
 
     model = Model.build_transformer().to(device)
     optimizer = torch.optim.AdamW(model.parameters(), hparams['learning_rate'])
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss().to(device)
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=hparams['learning_rate'],
                                                     steps_per_epoch=int(len(train_loader)),
                                                     epochs=hparams['epochs'],
