@@ -10,7 +10,7 @@ import Model
 import utils
 
 def main(learning_rate=5e-4,
-         batch_size=20,
+         batch_size=5,
          epochs=10,
          train_url="train-clean-100",
          test_url="test-clean",
@@ -22,7 +22,6 @@ def main(learning_rate=5e-4,
          ):
 
     hparams = {
-        "n_cnn_layers": 4,
         "n_class": 29,
         "n_feats": 128,
         "d_model": 512,
@@ -33,7 +32,7 @@ def main(learning_rate=5e-4,
         "epochs": epochs
     }
 
-    log_file = open('/logs', 'w')
+    log_file = open('./logs', 'w')
 
     # Redirect sys.stdout to the log file
     sys.stdout = log_file
