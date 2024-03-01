@@ -60,7 +60,7 @@ class TextTransform:
         for i in labels:
             string.append(self.index_map[i])
         # return joins all values in the array with no separation. Then it
-        return ''.join(string).replace('', ' ')
+        return ''.join(string)
 
 
 train_audio_transforms = nn.Sequential(
@@ -76,17 +76,15 @@ text_transform = TextTransform()
 
 #TODO fix this to decode correctly. It doesn't work rn
 def GreedyDecoder(output, labels, label_lengths, blank_label=28, collapse_repeated=True):
-    arg_maxes = torch.argmax(output, dim=2)
+    # output (batch, seq, vocab_size)
+    arg_maxes = torch.argmax(output, dim=2)  # (batch, seq)
     decodes = []
     targets = []
     for i, args in enumerate(arg_maxes):
         decode = []
         targets.append(text_transform.int_to_text(labels[i][:label_lengths[i]].tolist()))
         for j, index in enumerate(args):
-            if index != blank_label:
-                if collapse_repeated and j != 0 and index == args[j -1]:
-                    continue
-                decode.append(index.item())
+            decode.append(index.item())
         decodes.append(text_transform.int_to_text(decode))
     return decodes, targets
 
