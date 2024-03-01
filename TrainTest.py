@@ -3,7 +3,7 @@ import torchaudio
 import torch.nn as nn
 from comet_ml import Experiment
 from comet_ml.integration.pytorch import log_model
-from torchmetrics.text import WordErrorRate
+from torchmetrics.text import CharErrorRate
 from tqdm import tqdm
 import utils
 
@@ -42,26 +42,27 @@ def test(model, device, test_loader, criterion, epoch, iter_meter, experiment):
     print('\nevaluating…')
     model.eval()
     test_loss = 0
-    test_wer = []
+    test_cer = []
     with experiment.test():
         with torch.no_grad():
+            cer = CharErrorRate()
             for I, _data in enumerate(test_loader):
                 spectrograms, labels, input_lengths, label_lengths = _data
                 spectrograms, labels = spectrograms.to(device), labels.to(device)
 
-                output = model(spectrograms)  # (batch, time, n_class)
+                output = model(spectrograms, labels)  # (batch, time, n_class)
                 output = nn.functional.log_softmax(output, dim=2)
                 output = output.transpose(0, 1) # (time, batch, n_class)
 
-                loss = criterion(output, labels, input_lengths, label_lengths)
+                loss = criterion(output.reshape(-1, 28), labels.view(-1).to(torch.long))
                 test_loss += loss.item() / len(test_loader)
 
                 decoded_preds, decoded_targets = utils.GreedyDecoder(output.transpose(0, 1), labels, label_lengths)
                 for j in range(len(decoded_preds)):
-                    test_wer.append(WordErrorRate(preds=decoded_preds[j], targets=decoded_targets[j]))
+                    test_cer.append(cer(decoded_preds[j], decoded_targets[j]))
 
-    avg_wer = sum(test_wer)/len(test_wer)
+    avg_cer = sum(test_cer)/len(test_cer)
     experiment.log_metric('test_loss', test_loss, step=iter_meter.get())
-    experiment.log_metric('wer', avg_wer, step=iter_meter.get())
+    experiment.log_metric('cer', avg_cer, step=iter_meter.get())
 
-    print('Test set: Average loss: {:.4f}, Average WER: {:.4f}\n'.format(test_loss,  avg_wer))
+    print('Test set: Average loss: {:.4f}, Average CER: {:.4f}\n'.format(test_loss,  avg_cer))
