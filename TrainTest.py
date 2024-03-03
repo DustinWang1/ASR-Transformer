@@ -14,15 +14,15 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epoch, i
     with experiment.train():
         batch_iterator = tqdm(train_loader, desc=f"Processing")
         for batch_idx, _data in enumerate(batch_iterator):
-            spectrograms, labels, input_lengths, label_lengths = _data
-            spectrograms, labels = spectrograms.to(device), labels.to(device)
+            spectrograms, decoder_inputs, labels, label_lengths = _data
+            spectrograms, decoder_inputs, labels = spectrograms.to(device), decoder_inputs.to(device), labels.to(device)
 
             optimizer.zero_grad()
 
-            output = model(spectrograms, labels)  # OUT (batch, time, n_class)
+            output = model(spectrograms, decoder_inputs)  # OUT (batch, time, n_class)
             output = nn.functional.log_softmax(output, dim=2)
 
-            loss = criterion(output.view(-1, 28), labels.view(-1).to(torch.long))
+            loss = criterion(output.view(-1, 29), labels.view(-1).to(torch.long))
             batch_iterator.set_postfix({"loss": f"{loss.item():6.3f}"})
             loss.backward()
 
@@ -38,23 +38,23 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epoch, i
                     100. * batch_idx / len(train_loader), loss.item()))
 
 
-def test(model, device, test_loader, criterion, epoch, iter_meter, experiment):
+def test(model, device, test_loader, criterion, iter_meter, experiment):
     print('\nevaluating…')
     model.eval()
     test_loss = 0
     test_cer = []
-    with experiment.test():
+    with (experiment.test()):
         with torch.no_grad():
             cer = CharErrorRate()
             for I, _data in enumerate(test_loader):
-                spectrograms, labels, input_lengths, label_lengths = _data
-                spectrograms, labels = spectrograms.to(device), labels.to(device)
+                spectrograms, decoder_inputs, labels, label_lengths = _data
+                spectrograms, decoder_inputs, labels = spectrograms.to(device), decoder_inputs.to(device), labels.to(device)
 
-                output = model(spectrograms, labels)  # (batch, time, n_class)
+                output = model(spectrograms, decoder_inputs)  # (batch, time, n_class)
                 output = nn.functional.log_softmax(output, dim=2)
                 output = output.transpose(0, 1) # (time, batch, n_class)
 
-                loss = criterion(output.reshape(-1, 28), labels.view(-1).to(torch.long))
+                loss = criterion(output.reshape(-1, 29), labels.view(-1).to(torch.long))
                 test_loss += loss.item() / len(test_loader)
 
                 decoded_preds, decoded_targets = utils.GreedyDecoder(output.transpose(0, 1), labels, label_lengths)
