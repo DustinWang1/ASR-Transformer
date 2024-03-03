@@ -31,6 +31,7 @@ char_map_str = """
  x 25
  y 26
  z 27
+ <EOS> 28
  """
 
 
@@ -74,8 +75,7 @@ valid_audio_transforms = torchaudio.transforms.MelSpectrogram()
 text_transform = TextTransform()
 
 
-#TODO fix this to decode correctly. It doesn't work rn
-def GreedyDecoder(output, labels, label_lengths, blank_label=28, collapse_repeated=True):
+def GreedyDecoder(output, labels, label_lengths):
     # output (batch, seq, vocab_size)
     arg_maxes = torch.argmax(output, dim=2)  # (batch, seq)
     decodes = []
@@ -92,7 +92,7 @@ def GreedyDecoder(output, labels, label_lengths, blank_label=28, collapse_repeat
 def data_processing(data, data_type="train"):
     spectrograms = []
     labels = []
-    input_lengths = []
+    decoder_inputs = []
     label_lengths = []
     for (waveform, _, utterance, _, _, _) in data:
         if data_type == 'train':
@@ -100,15 +100,18 @@ def data_processing(data, data_type="train"):
         else:
             spec = valid_audio_transforms(waveform).squeeze(0).transpose(0, 1)
         spectrograms.append(spec)
-        label = torch.Tensor(text_transform.text_to_int(utterance.lower()))
+        label_ = torch.Tensor(text_transform.text_to_int(utterance.lower()))
+        label = torch.cat([label_, torch.Tensor([28])])
+        decoder_input = torch.cat([torch.Tensor([28]), label_])
         labels.append(label)
-        input_lengths.append(spec.shape[0]) #Divided by 2 because the first convolutional layer divides the input length by 2
+        decoder_inputs.append(decoder_input)
         label_lengths.append(len(label))
 
     spectrograms = nn.utils.rnn.pad_sequence(spectrograms, batch_first=True).unsqueeze(1).transpose(2, 3)
     labels = nn.utils.rnn.pad_sequence(labels, batch_first=True)
+    decoder_inputs = nn.utils.rnn.pad_sequence(decoder_inputs, batch_first=True)
 
-    return spectrograms, labels.to(torch.int32), input_lengths, label_lengths
+    return spectrograms, decoder_inputs.to(torch.int32), labels.to(torch.int32), label_lengths
 
 
 class IterMeter(object):

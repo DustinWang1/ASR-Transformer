@@ -52,11 +52,11 @@ class ResCNN(nn.Module):
         return x
 
 class SpeechRecognitionModel(nn.Module):
-    def __init__(self, vocab_size: int = 28, n_cnn_layers: int = 4, d_model: int = 512, n_feats: int = 128, stride: int = 1, dropout: float = 0.1):
+    def __init__(self, vocab_size: int = 29, n_cnn_layers: int = 4, d_model: int = 512, n_feats: int = 128, stride: int = 1, dropout: float = 0.1):
         super().__init__()
 
         #vocab size is num characters
-        self.label_embedding = InputEmbeddings(d_model=512, vocab_size=29)
+        self.label_embedding = InputEmbeddings(d_model=d_model, vocab_size=vocab_size)
         self.cnn = nn.Conv2d(1, 4, 3, stride=stride,
                              padding=2 // 2)
         self.resCNNLayers = nn.Sequential(*[
@@ -64,9 +64,29 @@ class SpeechRecognitionModel(nn.Module):
             for _ in range(n_cnn_layers)
         ])
 
-        self.transformer = nn.Transformer(d_model=512, nhead=8, batch_first=True)
+        self.transformer = nn.Transformer(d_model=d_model, nhead=8, batch_first=True)
 
         self.projection = nn.Linear(d_model, vocab_size)
+
+    def encode(self, spec):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        x = self.cnn(spec)
+        x = self.resCNNLayers(x)  # (batch, channel, n_feats, seq_len)
+
+        # Prepare for transformer
+        # (batch, seq_len, d_model) d_model = 512
+        sizes = x.size()
+        x = x.view(sizes[0], sizes[1] * sizes[2], sizes[3])  # (batch, feature, time)
+        x = x.transpose(1, 2)  # (batch, seq, d_model)
+
+        x = self.transformer.encoder(x)
+        return x
+
+    def decode(self, encoder_output, decoder_input):
+        decoder_input = self.label_embedding(decoder_input)
+        x = self.transformer.decoder(decoder_input, encoder_output)
+        x = self.projection(x)
+        return x
 
     def forward(self, spec, label):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
