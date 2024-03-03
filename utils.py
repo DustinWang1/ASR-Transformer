@@ -32,6 +32,8 @@ char_map_str = """
  y 26
  z 27
  <EOS> 28
+ <SOS> 29
+ <PAD> 30
  """
 
 
@@ -100,18 +102,21 @@ def data_processing(data, data_type="train"):
         else:
             spec = valid_audio_transforms(waveform).squeeze(0).transpose(0, 1)
         spectrograms.append(spec)
+
         label_ = torch.Tensor(text_transform.text_to_int(utterance.lower()))
         label = torch.cat([label_, torch.Tensor([28])])
-        decoder_input = torch.cat([torch.Tensor([28]), label_])
+        decoder_input = torch.cat([torch.Tensor([29]), label_])
+
         labels.append(label)
         decoder_inputs.append(decoder_input)
         label_lengths.append(len(label))
 
-    spectrograms = nn.utils.rnn.pad_sequence(spectrograms, batch_first=True).unsqueeze(1).transpose(2, 3)
-    labels = nn.utils.rnn.pad_sequence(labels, batch_first=True)
-    decoder_inputs = nn.utils.rnn.pad_sequence(decoder_inputs, batch_first=True)
+    # label and decoder outputs should be padded with padding character
+    spectrograms = nn.utils.rnn.pad_sequence(spectrograms, True).unsqueeze(1).transpose(2, 3)
+    labels = nn.utils.rnn.pad_sequence(labels, padding_value=30, batch_first=True)
+    decoder_inputs = nn.utils.rnn.pad_sequence(decoder_inputs, padding_value=30, batch_first=True)
 
-    return spectrograms, decoder_inputs.to(torch.int32), labels.to(torch.int32), label_lengths
+    return spectrograms, decoder_inputs.to(torch.int64), labels.to(torch.int64), label_lengths
 
 
 class IterMeter(object):

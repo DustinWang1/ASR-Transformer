@@ -22,7 +22,7 @@ def main(learning_rate=5e-4,
          ):
 
     hparams = {
-        "n_class": 28,
+        "n_class": 31,
         "n_feats": 128,
         "d_model": 512,
         "stride": 1,
@@ -70,7 +70,7 @@ def main(learning_rate=5e-4,
 
     model = Model.build_transformer().to(device)
     optimizer = torch.optim.AdamW(model.parameters(), hparams['learning_rate'])
-    criterion = nn.CrossEntropyLoss().to(device)
+    criterion = nn.CrossEntropyLoss(ignore_index=30).to(device)
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=hparams['learning_rate'],
                                                     steps_per_epoch=int(len(train_loader)),
                                                     epochs=hparams['epochs'],
@@ -78,7 +78,7 @@ def main(learning_rate=5e-4,
 
     iter_meter = utils.IterMeter()
     for epoch in range(1, epochs + 1):
-        #TrainTest.train(model, device, train_loader, criterion, optimizer, scheduler, epoch, iter_meter, experiment)
+        TrainTest.train(model, device, train_loader, criterion, optimizer, scheduler, epoch, iter_meter, experiment)
         TrainTest.test(model, device, test_loader, criterion, iter_meter, experiment)
         experiment.end()
     torch.save(model.state_dict(), "./model_saves")
