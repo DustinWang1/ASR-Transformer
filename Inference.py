@@ -24,19 +24,21 @@ with torch.no_grad():
 
         encoder_output = asr_model.encode(spectrograms)
 
-        # start with "<EOS>" and pass into thing until done
-        eos = torch.Tensor([28]).to(torch.int64).unsqueeze(0)
+        # start with "<SOS>" and pass into thing until done
+        eos = torch.Tensor([29]).to(torch.int64).unsqueeze(0).to(device)
         output = []
         decoder_out = asr_model.decode(encoder_output, eos)
-        decoder_ch, _ = utils.GreedyDecoder(decoder_out, labels, label_lengths)
+        decoder_ch, labels_ch = utils.GreedyDecoder(decoder_out, labels, label_lengths)
         decoder_out = torch.argmax(decoder_out, dim=2)
-        output.append(decoder_ch)
+        output += decoder_ch
 
         while decoder_out is not eos:
             decoder_out = asr_model.decode(encoder_output, decoder_out)
             decoder_ch, _ = utils.GreedyDecoder(decoder_out, labels, label_lengths)
             decoder_out = torch.argmax(decoder_out, dim=2)
-            output.append(decoder_ch)
+            output += decoder_ch
+
+
         break
 
 

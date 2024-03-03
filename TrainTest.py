@@ -19,10 +19,10 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epoch, i
 
             optimizer.zero_grad()
 
+            #Spectrograms (batch, channel, n_mels, seq)
             output = model(spectrograms, decoder_inputs)  # OUT (batch, time, n_class)
-            output = nn.functional.log_softmax(output, dim=2)
 
-            loss = criterion(output.view(-1, 29), labels.view(-1).to(torch.long))
+            loss = criterion(output.view(-1, 31), labels.view(-1).to(torch.long))
             batch_iterator.set_postfix({"loss": f"{loss.item():6.3f}"})
             loss.backward()
 
@@ -51,10 +51,8 @@ def test(model, device, test_loader, criterion, iter_meter, experiment):
                 spectrograms, decoder_inputs, labels = spectrograms.to(device), decoder_inputs.to(device), labels.to(device)
 
                 output = model(spectrograms, decoder_inputs)  # (batch, time, n_class)
-                output = nn.functional.log_softmax(output, dim=2)
-                output = output.transpose(0, 1) # (time, batch, n_class)
 
-                loss = criterion(output.reshape(-1, 29), labels.view(-1).to(torch.long))
+                loss = criterion(output.view(-1, 31), labels.view(-1).to(torch.long))
                 test_loss += loss.item() / len(test_loader)
 
                 decoded_preds, decoded_targets = utils.GreedyDecoder(output.transpose(0, 1), labels, label_lengths)

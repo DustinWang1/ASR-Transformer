@@ -52,7 +52,7 @@ class ResCNN(nn.Module):
         return x
 
 class SpeechRecognitionModel(nn.Module):
-    def __init__(self, vocab_size: int = 29, n_cnn_layers: int = 4, d_model: int = 512, n_feats: int = 128, stride: int = 1, dropout: float = 0.1):
+    def __init__(self, vocab_size: int = 31, n_cnn_layers: int = 4, d_model: int = 512, n_feats: int = 128, stride: int = 1, dropout: float = 0.1):
         super().__init__()
 
         #vocab size is num characters
