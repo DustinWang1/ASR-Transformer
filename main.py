@@ -78,7 +78,7 @@ def main(learning_rate=5e-4,
 
     iter_meter = utils.IterMeter()
     for epoch in range(1, epochs + 1):
-        TrainTest.train(model, device, train_loader, criterion, optimizer, scheduler, epoch, iter_meter, experiment)
+        #TrainTest.train(model, device, train_loader, criterion, optimizer, scheduler, epoch, iter_meter, experiment)
         TrainTest.test(model, device, test_loader, criterion, iter_meter, experiment)
         experiment.end()
     torch.save(model.state_dict(), "./model_saves")
