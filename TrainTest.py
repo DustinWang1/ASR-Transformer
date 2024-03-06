@@ -12,18 +12,16 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epoch, i
     model.train()
     data_len = len(train_loader.dataset)
     with experiment.train():
-        batch_iterator = tqdm(train_loader, desc=f"Processing")
-        for batch_idx, _data in enumerate(batch_iterator):
+        for batch_idx, _data in enumerate(train_loader):
             spectrograms, decoder_inputs, labels, label_lengths = _data
             spectrograms, decoder_inputs, labels = spectrograms.to(device), decoder_inputs.to(device), labels.to(device)
 
             optimizer.zero_grad()
 
-            #Spectrograms (batch, channel, n_mels, seq)
+            # Spectrograms (batch, channel, n_mels, seq)
             output = model(spectrograms, decoder_inputs)  # OUT (batch, time, n_class)
 
-            loss = criterion(output.view(-1, 31), labels.view(-1).to(torch.long))
-            batch_iterator.set_postfix({"loss": f"{loss.item():6.3f}"})
+            loss = criterion(output.view(-1, 31), labels.view(-1))
             loss.backward()
 
             experiment.log_metric('loss', loss.item(), step=iter_meter.get())
@@ -55,7 +53,7 @@ def test(model, device, test_loader, criterion, iter_meter, experiment):
                 loss = criterion(output.view(-1, 31), labels.view(-1).to(torch.long))
                 test_loss += loss.item() / len(test_loader)
 
-                decoded_preds, decoded_targets = utils.GreedyDecoder(output.transpose(0, 1), labels, label_lengths)
+                decoded_preds, decoded_targets = utils.GreedyDecoder(output, labels, label_lengths)
                 for j in range(len(decoded_preds)):
                     test_cer.append(cer(decoded_preds[j], decoded_targets[j]))
 

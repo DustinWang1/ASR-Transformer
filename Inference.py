@@ -32,6 +32,7 @@ with torch.no_grad():
         decoder_out = torch.argmax(decoder_out, dim=2)
         output += decoder_ch
 
+        # TODO YOU STUPID BITCH. Output is all of the past decoder outputs!
         while decoder_out is not eos:
             decoder_out = asr_model.decode(encoder_output, decoder_out)
             decoder_ch, _ = utils.GreedyDecoder(decoder_out, labels, label_lengths)

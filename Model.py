@@ -57,12 +57,14 @@ class SpeechRecognitionModel(nn.Module):
 
         #vocab size is num characters
         self.label_embedding = InputEmbeddings(d_model=d_model, vocab_size=vocab_size)
-        self.cnn = nn.Conv2d(1, 4, 3, stride=stride,
-                             padding=2 // 2)
+        self.cnn = nn.Conv2d(1, 32, 3, stride=stride,
+                             padding=3 // 2)
         self.resCNNLayers = nn.Sequential(*[
-            ResCNN(4, 4, kernel=3, stride=1, dropout=dropout, n_feats=n_feats)
+            ResCNN(32, 32, kernel=3, stride=1, dropout=dropout, n_feats=n_feats)
             for _ in range(n_cnn_layers)
         ])
+
+        self.FC = nn.Linear(n_feats*32, d_model)
 
         self.transformer = nn.Transformer(d_model=d_model, nhead=8, batch_first=True)
 
@@ -78,7 +80,7 @@ class SpeechRecognitionModel(nn.Module):
         sizes = x.size()
         x = x.view(sizes[0], sizes[1] * sizes[2], sizes[3])  # (batch, feature, time)
         x = x.transpose(1, 2)  # (batch, seq, d_model)
-
+        x = self.FC(x)
         x = self.transformer.encoder(x)
         return x
 
@@ -99,6 +101,7 @@ class SpeechRecognitionModel(nn.Module):
         x = x.view(sizes[0], sizes[1] * sizes[2], sizes[3])  # (batch, feature, time)
         x = x.transpose(1, 2)  # (batch, seq, d_model)
 
+        x = self.FC(x)
         # Input Embedding for label
         label = self.label_embedding(label)
 

@@ -83,11 +83,9 @@ def GreedyDecoder(output, labels, label_lengths):
     decodes = []
     targets = []
     for i, args in enumerate(arg_maxes):
-        decode = []
         targets.append(text_transform.int_to_text(labels[i][:label_lengths[i]].tolist()))
-        for j, index in enumerate(args):
-            decode.append(index.item())
-        decodes.append(text_transform.int_to_text(decode))
+        args = args.tolist()
+        decodes.append(text_transform.int_to_text(args))
     return decodes, targets
 
 
